@@ -10,42 +10,38 @@ import (
 
 // Context 上下文
 type Context struct {
-	Res  http.ResponseWriter
-	Req  *http.Request
-	Pipe interface{}
+	Res    http.ResponseWriter
+	Req    *http.Request
+	Finish bool        // 控制中间件流程
+	Pipe   interface{} // 传递数据
 }
 
 // ReplyJSON 以 json 方式返回数据
 func (ctx *Context) ReplyJSON(something interface{}) {
 	json.NewEncoder(ctx.Res).Encode(something)
+	ctx.Finish = true
 }
 
-// IsUrlencoded 解析
-func (ctx *Context) IsUrlencoded() (cb bool) {
+// Urlencoded 解析
+func Urlencoded(ctx *Context) {
+	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {
-		ok := strings.Contains(v, "application/x-www-form-urlencoded")
-		if ok {
-			cb = true
-		}
+		ok = strings.Contains(v, "application/x-www-form-urlencoded")
 	}
-	if !cb {
+	if !ok {
 		ctx.ReplyJSON(reply.Urlencoded())
 	}
-	return cb
 }
 
-// IsMultipart 解析
-func (ctx *Context) IsMultipart() (cb bool) {
+// Multipart 解析
+func Multipart(ctx *Context) {
+	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {
-		ok := strings.Contains(v, "multipart/form-data")
-		if ok {
-			cb = true
-		}
+		ok = strings.Contains(v, "multipart/form-data")
 	}
-	if !cb {
+	if !ok {
 		ctx.ReplyJSON(reply.Multipart())
 	}
-	return cb
 }

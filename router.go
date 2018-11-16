@@ -1,13 +1,12 @@
 package restful
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/CARVIN94/go-util/logcolor"
+	"github.com/CARVIN94/go-util/log"
 )
 
 // Config Http服务器基础配置
@@ -41,13 +40,13 @@ var (
 // Start 启动服务
 func Start(config *Config) {
 	port := ":" + strconv.Itoa(config.Port)
-	defer log.Print(logcolor.Success("服务器启动成功" + " " + "http://localhost" + port))
+	defer log.Success("服务器启动成功" + " " + "http://localhost" + port)
 
 	if config.Port == 0 {
-		log.Fatal(logcolor.Error("请检查服务器端口配置"))
+		log.Fatal("请检查服务器端口配置")
 	}
 	if len(config.Route.Addr) == 0 {
-		log.Fatal(logcolor.Error("请检查服务器路由配置"))
+		log.Fatal("请检查服务器路由配置")
 	}
 	if config.ReadTimeout == 0 {
 		config.ReadTimeout = time.Second * 10
@@ -63,9 +62,7 @@ func Start(config *Config) {
 	}
 	go func() {
 		err := server.ListenAndServe()
-		if err != nil {
-			log.Fatal(logcolor.Error("服务器启动失败"), err.Error())
-		}
+		log.FailOnError(err, "服务器启动失败")
 	}()
 }
 
@@ -77,12 +74,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	if ok {
 		r.ParseForm()
-		ctx := &Context{w, r, nil}
+		ctx := &Context{w, r, nil, false}
 		for _, v := range ware {
-			v(ctx)
+			if !ctx.Finish {
+				v(ctx)
+			}
 		}
 	} else {
-		log.Print(logcolor.Magenta("[HTTP] ") + "404: " + url)
+		log.Connect("HTTP", "404", url)
 	}
 }
 
