@@ -74,7 +74,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	if ok {
 		r.ParseForm()
-		ctx := &Context{w, r, false, nil}
+		ctx := &Context{Res: w, Req: r}
 		for _, v := range ware {
 			if !ctx.Finish {
 				v(ctx)
