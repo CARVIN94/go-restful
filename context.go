@@ -8,12 +8,15 @@ import (
 	"github.com/CARVIN94/go-reply"
 )
 
+// Pipe 传递数据
+type Pipe map[string]interface{}
+
 // Context 上下文
 type Context struct {
 	Res    http.ResponseWriter
 	Req    *http.Request
-	Finish bool        // 控制中间件流程
-	Pipe   interface{} // 传递数据
+	Pipe   *Pipe
+	Finish bool // 控制中间件流程
 }
 
 // ReplyJSON 以 json 方式返回数据
