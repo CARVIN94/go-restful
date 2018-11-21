@@ -15,7 +15,7 @@ type Pipe map[string]interface{}
 type Context struct {
 	Res    http.ResponseWriter
 	Req    *http.Request
-	Pipe   *Pipe
+	Pipe   Pipe
 	Finish bool // 控制中间件流程
 }
 

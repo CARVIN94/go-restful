@@ -2,6 +2,7 @@ package restful
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -70,11 +71,31 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	urlSplit := strings.Split(url, "?")
 	method := r.Method
-	ware, ok := h.Route.Addr[urlSplit[0]+" "+method]
+	ware := []middleware{}
+	params := []string{}
+	reg := ""
+	ok := false
+	if len(urlSplit) == 1 {
+		urlSplit = append(urlSplit, "")
+	}
+	for addr, middlewares := range h.Route.Addr {
+		addrSplit := strings.Split(addr, " ")
+		if addrSplit[1] == method {
+			reg, params = analysisAddr(addrSplit[0])
+			match, err := regexp.MatchString(reg, urlSplit[0])
+			if match && err == nil {
+				ware = middlewares
+				ok = true
+				goto Next
+			}
+		}
+	}
+Next:
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	if ok {
-		r.ParseForm()
-		ctx := &Context{Res: w, Req: r}
+		ctx := &Context{Res: w, Req: r, Pipe: Pipe{}, Finish: false}
+		ctx.Req.ParseForm()
+		analysisURLData(urlSplit[0], urlSplit[1], reg, params, ctx)
 		for _, v := range ware {
 			if !ctx.Finish {
 				v(ctx)
@@ -101,5 +122,39 @@ func (r *Route) Post(address string, args ...middleware) {
 func (r *Route) format() {
 	if r.Addr == nil {
 		r.Addr = make(routeMap)
+	}
+}
+
+func analysisAddr(addr string) (reg string, params []string) {
+	flysnowRegexp, _ := regexp.Compile(`/(:\S*?)(/|$)`)
+	stringArr := flysnowRegexp.FindAllString(addr, -1)
+	reg = "^" + addr
+	for _, str := range stringArr {
+		sub := flysnowRegexp.FindStringSubmatch(str)
+		params = append(params, sub[1])
+		reg = strings.Replace(reg, sub[1], `(\S*?)`, 1)
+	}
+	reg = reg + "$"
+	return reg, params
+}
+func analysisURLData(url string, queryString string, reg string, paramKeys []string, ctx *Context) {
+	// param
+	flysnowRegexp, _ := regexp.Compile(reg)
+	sub := flysnowRegexp.FindStringSubmatch(url)
+	for index, value := range sub {
+		if index != 0 {
+			key := paramKeys[index-1][1:]
+			ctx.Req.Form[key] = []string{value}
+		}
+	}
+	// query
+	queryArray := strings.Split(queryString, "&")
+	if len(queryArray) != 0 {
+		for _, item := range queryArray {
+			obj := strings.Split(item, "=")
+			if len(obj) == 1 {
+				ctx.Req.Form[obj[0]] = []string{obj[1]}
+			}
+		}
 	}
 }
