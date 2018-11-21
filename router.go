@@ -149,7 +149,7 @@ func analysisURLData(url string, queryString string, reg string, paramKeys []str
 	}
 	// query
 	queryArray := strings.Split(queryString, "&")
-	if len(queryArray) != 0 {
+	if len(queryArray) != 0 && queryArray[0] != "" {
 		for _, item := range queryArray {
 			obj := strings.Split(item, "=")
 			if len(obj) == 1 {
