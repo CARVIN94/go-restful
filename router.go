@@ -108,14 +108,22 @@ Next:
 
 // Get 把事件放进 Route
 func (r *Route) Get(address string, args ...middleware) {
-	r.format()
-	r.Addr[address+" "+"GET"] = args
+	handleRouteMethod("GET", r, address, args)
 }
 
 // Post 把事件放进 Route
 func (r *Route) Post(address string, args ...middleware) {
-	r.format()
-	r.Addr[address+" "+"POST"] = args
+	handleRouteMethod("POST", r, address, args)
+}
+
+// Put 把事件放进 Route
+func (r *Route) Put(address string, args ...middleware) {
+	handleRouteMethod("PUT", r, address, args)
+}
+
+// Delete 把事件放进 Route
+func (r *Route) Delete(address string, args ...middleware) {
+	handleRouteMethod("DELETE", r, address, args)
 }
 
 // format 格式化 Route.Addr 修复 map nil 问题
@@ -125,6 +133,10 @@ func (r *Route) format() {
 	}
 }
 
+func handleRouteMethod(method string, r *Route, address string, args []middleware) {
+	r.format()
+	r.Addr[address+" "+method] = args
+}
 func analysisAddr(addr string) (reg string, params []string) {
 	flysnowRegexp, _ := regexp.Compile(`/(:\S*?)(/|$)`)
 	stringArr := flysnowRegexp.FindAllString(addr, -1)
