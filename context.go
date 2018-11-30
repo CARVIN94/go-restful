@@ -32,8 +32,11 @@ func (ctx *Context) ReplyJSON(something interface{}) {
 
 // Close 处理验证失败
 func (ctx *Context) Close() {
-	if err := recover(); err == "Close" {
+	err := recover()
+	if err == "Close" {
 		return
+	} else if err != nil {
+		panic(err)
 	}
 }
 
@@ -46,6 +49,7 @@ func (ctx *Context) Check() {
 
 // Urlencoded 解析
 func Urlencoded(ctx *Context) {
+	defer ctx.Close()
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {
@@ -58,6 +62,7 @@ func Urlencoded(ctx *Context) {
 
 // Multipart 解析
 func Multipart(ctx *Context) {
+	defer ctx.Close()
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {

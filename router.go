@@ -102,7 +102,7 @@ Next:
 			}
 		}
 	} else {
-		log.Connect("HTTP", "404", url)
+		log.Connect("HTTP", "404", method+" "+url)
 	}
 }
 
