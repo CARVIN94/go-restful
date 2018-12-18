@@ -47,6 +47,11 @@ func (ctx *Context) Check() {
 	}
 }
 
+// SetFormData 改变 form 内参数的值
+func (ctx *Context) SetFormData(key string, value string) {
+	ctx.Req.Form[key] = []string{value}
+}
+
 // Urlencoded 解析
 func Urlencoded(ctx *Context) {
 	defer ctx.Close()
