@@ -49,12 +49,6 @@ func Start(config *Config) {
 	if len(config.Route.Addr) == 0 {
 		log.Fatal("请检查服务器路由配置")
 	}
-	if config.ReadTimeout == 0 {
-		config.ReadTimeout = time.Second * 10
-	}
-	if config.WriteTimeout == 0 {
-		config.WriteTimeout = time.Second * 4
-	}
 	server = &http.Server{
 		Addr:         port,
 		Handler:      &handler{config.Route},
