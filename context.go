@@ -30,8 +30,8 @@ func (ctx *Context) ReplyJSON(something interface{}) {
 	panic("Close")
 }
 
-// Close 处理验证失败
-func (ctx *Context) Close() {
+// ErrorHandler 错误处理
+func (ctx *Context) ErrorHandler() {
 	err := recover()
 	if err == "Close" {
 		return
@@ -54,7 +54,7 @@ func (ctx *Context) SetFormData(key string, value string) {
 
 // Urlencoded 解析
 func Urlencoded(ctx *Context) {
-	defer ctx.Close()
+	defer ctx.ErrorHandler()
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {
@@ -67,7 +67,7 @@ func Urlencoded(ctx *Context) {
 
 // Multipart 解析
 func Multipart(ctx *Context) {
-	defer ctx.Close()
+	defer ctx.ErrorHandler()
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {

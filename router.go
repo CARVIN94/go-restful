@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/CARVIN94/go-reply"
 	"github.com/CARVIN94/go-util/log"
 )
 
@@ -20,7 +21,8 @@ type Config struct {
 
 // Route 定义路由
 type Route struct {
-	Addr routeMap
+	Addr       routeMap
+	BeforeFunc []middleware
 }
 
 // handler Http处理模型
@@ -62,20 +64,34 @@ func Start(config *Config) {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.String()
-	urlSplit := strings.Split(url, "?")
-	method := r.Method
+	// 初始化参数
+	w.Header().Add("Content-Type", "application/json; charset=utf-8")
+	ctx := &Context{Res: w, Req: r, Pipe: Pipe{}, Finish: false}
 	ware := []middleware{}
 	params := []string{}
 	reg := ""
 	ok := false
+	// 解析地址
+	url := r.URL.String()
+	method := r.Method
+	urlSplit := strings.Split(url, "?")
 	if len(urlSplit) == 1 {
 		urlSplit = append(urlSplit, "")
 	}
+	// 解析路由表
 	for addr, middlewares := range h.Route.Addr {
 		addrSplit := strings.Split(addr, " ")
-		if addrSplit[1] == method {
-			reg, params = analysisAddr(addrSplit[0])
+		route := addrSplit[0]
+		mode := addrSplit[1]
+		switch mode {
+		case "Gateway":
+			ctx.Pipe["micro"] = route
+			ctx.Pipe["proxy"] = url[len(route)+1:]
+			reg = "^/" + route + "/*"
+		case method:
+			reg, params = analysisAddr(route)
+		}
+		if reg != "" {
 			match, err := regexp.MatchString(reg, urlSplit[0])
 			if match && err == nil {
 				ware = middlewares
@@ -85,9 +101,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 Next:
-	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	if ok {
-		ctx := &Context{Res: w, Req: r, Pipe: Pipe{}, Finish: false}
 		ctx.Req.ParseForm()
 		analysisURLData(urlSplit[0], urlSplit[1], reg, params, ctx)
 		for _, v := range ware {
@@ -96,8 +110,15 @@ Next:
 			}
 		}
 	} else {
+		defer ctx.ErrorHandler()
 		log.Connect("HTTP", "404", method+" "+url)
+		ctx.ReplyJSON(reply.RouteNotExist())
 	}
+}
+
+// Before 把事件放进 Route
+func (r *Route) Before(args ...middleware) {
+	r.BeforeFunc = args
 }
 
 // Get 把事件放进 Route
@@ -120,6 +141,11 @@ func (r *Route) Delete(address string, args ...middleware) {
 	handleRouteMethod("DELETE", r, address, args)
 }
 
+// Gateway 把事件放进 Route
+func (r *Route) Gateway(address string, args ...middleware) {
+	handleRouteMethod("Gateway", r, address, args)
+}
+
 // format 格式化 Route.Addr 修复 map nil 问题
 func (r *Route) format() {
 	if r.Addr == nil {
@@ -129,7 +155,7 @@ func (r *Route) format() {
 
 func handleRouteMethod(method string, r *Route, address string, args []middleware) {
 	r.format()
-	r.Addr[address+" "+method] = args
+	r.Addr[address+" "+method] = append(r.BeforeFunc, args...)
 }
 func analysisAddr(addr string) (reg string, params []string) {
 	flysnowRegexp, _ := regexp.Compile(`/(:\S*?)(/|$)`)
@@ -154,6 +180,9 @@ func analysisURLData(url string, queryString string, reg string, paramKeys []str
 		}
 	}
 	// query
+	if strings.HasSuffix(queryString, "&") {
+		queryString = queryString[:len(queryString)-1]
+	}
 	queryArray := strings.Split(queryString, "&")
 	if len(queryArray) != 0 && queryArray[0] != "" {
 		for _, item := range queryArray {
