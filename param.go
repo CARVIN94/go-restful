@@ -28,6 +28,14 @@ func (p *Param) Exist() *Param {
 	return p
 }
 
+// Required 参数必须存在
+func (p *Param) Required() *Param {
+	if p.Value == "" {
+		p.Ctx.ReplyJSON(reply.NotExist(p.Key))
+	}
+	return p
+}
+
 // String 参数输出字符串类型
 func (p *Param) String() string {
 	return p.Value

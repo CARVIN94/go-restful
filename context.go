@@ -55,6 +55,7 @@ func (ctx *Context) SetFormData(key string, value string) {
 // Urlencoded 解析
 func Urlencoded(ctx *Context) {
 	defer ctx.ErrorHandler()
+	ctx.Req.ParseForm()
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {
@@ -68,6 +69,7 @@ func Urlencoded(ctx *Context) {
 // Multipart 解析
 func Multipart(ctx *Context) {
 	defer ctx.ErrorHandler()
+	ctx.Req.ParseMultipartForm(32 << 20)
 	var ok = false
 	ct := ctx.Req.Header["Content-Type"]
 	for _, v := range ct {

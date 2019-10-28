@@ -102,7 +102,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 Next:
 	if ok {
-		ctx.Req.ParseForm()
 		analysisURLData(urlSplit[0], urlSplit[1], reg, params, ctx)
 		for _, v := range ware {
 			if !ctx.Finish {
