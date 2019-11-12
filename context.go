@@ -79,3 +79,17 @@ func Multipart(ctx *Context) {
 		ctx.ReplyJSON(reply.Multipart())
 	}
 }
+
+// JSON 解析
+func JSON(ctx *Context) {
+	defer ctx.ErrorHandler()
+	ctx.Req.ParseForm()
+	var ok = false
+	ct := ctx.Req.Header["Content-Type"]
+	for _, v := range ct {
+		ok = strings.Contains(v, "application/json")
+	}
+	if !ok {
+		ctx.ReplyJSON(reply.JSON())
+	}
+}
