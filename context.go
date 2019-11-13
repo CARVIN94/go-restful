@@ -2,6 +2,7 @@ package restful
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -89,7 +90,12 @@ func JSON(ctx *Context) {
 	for _, v := range ct {
 		ok = strings.Contains(v, "application/json")
 	}
-	if !ok {
+	bodyStr, err := ioutil.ReadAll(ctx.Req.Body)
+	if !ok || err != nil {
+		ctx.ReplyJSON(reply.JSON())
+	}
+	jsonErr := json.Unmarshal(bodyStr, &ctx.Pipe)
+	if jsonErr != nil {
 		ctx.ReplyJSON(reply.JSON())
 	}
 }
